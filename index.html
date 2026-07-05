@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Climate PRO ++</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+
+<h1>🌤️ Climate PRO ++</h1>
+
+<input id="search" placeholder="🔎 Ville..." autocomplete="off" oninput="suggestCities()">
+<div id="suggestions" class="suggestions"></div>
+
+<button onclick="searchCity()">🌍</button>
+<button onclick="gps()">📍</button>
+
+<div class="card">
+🌡️ Température : <span id="temp">--</span>°C<br>
+🔥 Ressenti : <span id="feel">--</span>°C<br>
+💧 Humidité : <span id="hum">--</span>%<br>
+🌬️ Vent : <span id="wind">--</span> km/h
+</div>
+
+<div class="card">
+<h3>📊 Prévisions aujourd’hui</h3>
+<p id="forecast">--</p>
+</div>
+
+<div class="card">
+<h3>🔮 Demain (IA)</h3>
+<p id="tomorrow">--</p>
+</div>
+
+<div class="card">
+<h3>🧠 IA Confort</h3>
+
+<button onclick="feedback('hot')">🔥</button>
+<button onclick="feedback('ok')">🙂</button>
+<button onclick="feedback('cold')">🥶</button>
+
+<p id="ai"></p>
+</div>
+
+<div class="card">
+<h3>🚨 Alertes</h3>
+<p id="alert">--</p>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
