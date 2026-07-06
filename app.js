@@ -1,7 +1,7 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 
 let profile = JSON.parse(localStorage.getItem("profile")) || {
-  type: "normal" // "cold", "normal", "hot"
+  type: "normal"
 };
 
 // ---------------- METEO ----------------
@@ -16,28 +16,50 @@ async function weather(lat, lon) {
   }
 }
 
-// ---------------- MODELE HUMAIN ----------------
+// ---------------- HUMIDEX ----------------
 function humidex(temp, hum) {
   return temp + (hum / 100) * 6;
 }
 
+// ---------------- WIND CHILL ----------------
 function windChill(temp, wind) {
   if (wind < 5) return temp;
-  return temp - (wind * 0.15);
+  return temp - wind * 0.15;
+}
+
+// ---------------- SAISON ----------------
+function seasonalAdjustment(temp) {
+  let month = new Date().getMonth();
+
+  // été
+  if (month >= 5 && month <= 8) {
+    return temp - 1.2;
+  }
+
+  // hiver
+  if (month <= 1 || month === 11) {
+    return temp + 1.2;
+  }
+
+  return temp;
 }
 
 // ---------------- IA RESSENTI ----------------
 function predict(temp, hum, wind) {
+
   let heat = humidex(temp, hum);
   let cold = windChill(temp, wind);
 
   let feels = (heat + cold) / 2;
 
-  let adjustment = 0;
-  if (profile.type === "cold") adjustment = -1.5;
-  if (profile.type === "hot") adjustment = 1.5;
+  // profil utilisateur
+  if (profile.type === "cold") feels -= 1.5;
+  if (profile.type === "hot") feels += 1.5;
 
-  return feels + adjustment;
+  // saison
+  feels = seasonalAdjustment(feels);
+
+  return feels;
 }
 
 // ---------------- GPS ----------------
@@ -99,9 +121,9 @@ async function suggestCities() {
 
     box.appendChild(div);
   });
-}
+});
 
-// fermer dropdown
+// fermeture dropdown
 document.addEventListener("click", (e) => {
   const box = document.getElementById("suggestions");
   const input = document.getElementById("search");
@@ -115,10 +137,7 @@ document.addEventListener("click", (e) => {
 async function load(lat, lon) {
   let data = await weather(lat, lon);
 
-  if (!data) {
-    alert("Données météo introuvables");
-    return;
-  }
+  if (!data) return;
 
   let hourly = data.hourly;
   let daily = data.daily;
@@ -127,6 +146,7 @@ async function load(lat, lon) {
     let now = new Date();
     let target = new Date();
     target.setHours(hour, 0, 0, 0);
+
     let diff = Math.floor((target - now) / 3600000);
     return Math.max(0, diff);
   }
