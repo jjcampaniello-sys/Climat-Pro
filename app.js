@@ -3,19 +3,19 @@ let memory = JSON.parse(localStorage.getItem("memory")) || [];
 // ---------------- CACHE REQUÊTES ----------------
 const CACHE_TIME = 10 * 60 * 1000; 
 
-function getCacheKey(lat, lon){
-  return `weather_${lat.toFixed(2)}_${lon.toFixed(2)}`;
+function getCacheKey(lat, lon, type){
+  return `weather_${lat.toFixed(2)}_${lon.toFixed(2)}_${type}`;
 }
 
-function saveCache(lat, lon, data){
-  localStorage.setItem(getCacheKey(lat, lon), JSON.stringify({
+function saveCache(lat, lon, type, data){
+  localStorage.setItem(getCacheKey(lat, lon, type), JSON.stringify({
     time: Date.now(),
     data: data
   }));
 }
 
-function loadCache(lat, lon){
-  let cache = localStorage.getItem(getCacheKey(lat, lon));
+function loadCache(lat, lon, type){
+  let cache = localStorage.getItem(getCacheKey(lat, lon, type));
   if(!cache) return null;
   cache = JSON.parse(cache);
   if(Date.now() - cache.time > CACHE_TIME){
@@ -24,20 +24,33 @@ function loadCache(lat, lon){
   return cache.data;
 }
 
-// ---------------- APPEL API METEO ----------------
-async function weather(lat, lon){
-  let cached = loadCache(lat, lon);
+// ---------------- APPEL API METEO (SÉPARÉ ET ALLÉGÉ) ----------------
+async function fetchCurrentWeather(lat, lon) {
+  let cached = loadCache(lat, lon, "current");
   if(cached) return cached;
 
   try {
-    const res = await fetch(
-      `https://open-meteo.com{lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,weathercode`
-    );
+    const res = await fetch(`https://open-meteo.com{lat}&longitude=${lon}&current_weather=true`);
     let data = await res.json();
-    saveCache(lat, lon, data);
+    saveCache(lat, lon, "current", data);
     return data;
   } catch (e) {
-    console.error("Erreur API Météo:", e);
+    console.error("Erreur API Courante:", e);
+    return null;
+  }
+}
+
+async function fetchHourlyWeather(lat, lon) {
+  let cached = loadCache(lat, lon, "hourly");
+  if(cached) return cached;
+
+  try {
+    const res = await fetch(`https://open-meteo.com{lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,weathercode&forecast_days=2`);
+    let data = await res.json();
+    saveCache(lat, lon, "hourly", data);
+    return data;
+  } catch (e) {
+    console.error("Erreur API Horaire:", e);
     return null;
   }
 }
@@ -71,11 +84,11 @@ function getIcon(code, wind){
   return "☁️";
 }
 
-// ---------------- GPS ----------------
+// ---------------- BOUTON LOCALISATION GPS ----------------
 function gps(){
   navigator.geolocation.getCurrentPosition(pos => {
     load(pos.coords.latitude, pos.coords.longitude);
-  }, () => {
+  }, (err) => {
     alert("Géolocalisation refusée ou inactive.");
   });
 }
@@ -86,12 +99,9 @@ async function searchCity(){
   if(!city) return;
 
   try {
-    const res = await fetch(
-      `https://open-meteo.com{encodeURIComponent(city)}&count=1`
-    );
+    const res = await fetch(`https://open-meteo.com{encodeURIComponent(city)}&count=1`);
     const data = await res.json();
 
-    // Correction avec [0] pour cibler la première ville trouvée
     if(data.results && data.results.length > 0){
       let premierResultat = data.results[0]; 
       load(premierResultat.latitude, premierResultat.longitude);
@@ -106,29 +116,32 @@ async function searchCity(){
 
 // ---------------- LOAD CENTRAL ----------------
 async function load(lat, lon){
-  let data = await weather(lat, lon);
-  if(!data || !data.current_weather || !data.hourly) {
+  // 1. Récupération météo actuelle (Garantit le fonctionnement comme sur votre ancienne version)
+  let currentData = await fetchCurrentWeather(lat, lon);
+  if(!currentData || !currentData.current_weather) {
     alert("Données météo introuvables.");
     return;
   }
 
-  let t = data.current_weather.temperature;
-  let w = data.current_weather.windspeed;
-  
-  // Extraction sécurisée de la première valeur du tableau pour l'humidité actuelle
-  let h = (data.hourly.relative_humidity_2m && data.hourly.relative_humidity_2m.length > 0) 
-          ? data.hourly.relative_humidity_2m[0] 
-          : 50;
+  let t = currentData.current_weather.temperature;
+  let w = currentData.current_weather.windspeed;
+  let h = 50; // Valeur d'humidité par défaut standardisée pour la météo actuelle
 
   let feel = predict(t, h, w);
 
+  // Affichage immédiat à l'écran
   document.getElementById("temp").innerText = t;
   document.getElementById("feel").innerText = feel.toFixed(1);
   document.getElementById("hum").innerText = h;
   document.getElementById("wind").innerText = w;
 
-  forecast(data);
-  tomorrow(data);
+  // 2. Récupération asynchrone des prévisions (Matin, Midi, Soir, Demain) sans bloquer l'application
+  let hourlyData = await fetchHourlyWeather(lat, lon);
+  if (hourlyData) {
+    forecast(hourlyData);
+    tomorrow(hourlyData);
+  }
+  
   alerts(t, h);
 }
 
@@ -171,9 +184,11 @@ function forecast(data){
 // ---------------- DEMAIN ----------------
 function tomorrow(data){
   if(!data.hourly || !data.hourly.temperature_2m) return;
-  let tDemain = data.hourly.temperature_2m[24] !== undefined ? data.hourly.temperature_2m[24] : 15;
-  let hDemain = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[24] : 50;
-  let wDemain = data.hourly.windspeed_10m ? data.hourly.windspeed_10m[24] : 10;
+  
+  // Index 32 correspond à la mi-journée du lendemain (24h + 8h)
+  let tDemain = data.hourly.temperature_2m[32] !== undefined ? data.hourly.temperature_2m[32] : 15;
+  let hDemain = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[32] : 50;
+  let wDemain = data.hourly.windspeed_10m ? data.hourly.windspeed_10m[32] : 10;
 
   let f = predict(tDemain, hDemain, wDemain);
   document.getElementById("tomorrow").innerText = `Ressenti IA : ${f.toFixed(1)}°C`;
@@ -219,9 +234,7 @@ async function suggestCities(){
   clearTimeout(timeout);
   timeout = setTimeout(async () => {
     try {
-      const res = await fetch(
-        `https://open-meteo.com{encodeURIComponent(input)}&count=5`
-      );
+      const res = await fetch(`https://open-meteo.com{encodeURIComponent(input)}&count=5`);
       const data = await res.json();
       box.innerHTML = "";
 
