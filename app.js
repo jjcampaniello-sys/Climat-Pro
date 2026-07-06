@@ -1,7 +1,7 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 
 let profile = JSON.parse(localStorage.getItem("profile")) || {
-  type: "normal" // cold | normal | hot
+  type: "normal"
 };
 
 // ---------------- METEO ----------------
@@ -30,15 +30,15 @@ function windChill(temp, wind) {
 // ---------------- SAISON ----------------
 function seasonalAdjustment(temp) {
   let month = new Date().getMonth();
-
-  if (month >= 5 && month <= 8) return temp - 1.2; // été
-  if (month <= 1 || month === 11) return temp + 1.2; // hiver
-
+  if (month >= 5 && month <= 8) return temp - 1.2;
+  if (month <= 1 || month === 11) return temp + 1.2;
   return temp;
 }
 
 // ---------------- MODELE IA ----------------
 function predict(temp, hum, wind) {
+  if (temp == null || hum == null || wind == null) return 0;
+
   let heat = humidex(temp, hum);
   let cold = windChill(temp, wind);
 
@@ -47,9 +47,7 @@ function predict(temp, hum, wind) {
   if (profile.type === "cold") feels -= 1.5;
   if (profile.type === "hot") feels += 1.5;
 
-  feels = seasonalAdjustment(feels);
-
-  return feels;
+  return seasonalAdjustment(feels);
 }
 
 // ---------------- COMFORT ----------------
@@ -61,7 +59,7 @@ function comfortLevel(feels) {
   return "🥵 Inconfort chaud";
 }
 
-// ---------------- INDEX SAFE (IMPORTANT FIX) ----------------
+// ---------------- INDEX SAFE ----------------
 function findIndex(hourly, hourTarget) {
   if (!hourly || !hourly.time) return 0;
 
@@ -83,11 +81,10 @@ function findIndex(hourly, hourTarget) {
 
 // ---------------- GPS ----------------
 function gps() {
-  navigator.geolocation.getCurrentPosition(async pos => {
-    load(pos.coords.latitude, pos.coords.longitude);
-  }, () => {
-    alert("GPS indisponible ou refusé.");
-  });
+  navigator.geolocation.getCurrentPosition(
+    pos => load(pos.coords.latitude, pos.coords.longitude),
+    () => alert("GPS indisponible ou refusé.")
+  );
 }
 
 // ---------------- SEARCH ----------------
@@ -102,7 +99,7 @@ async function searchCity() {
 
     const data = await res.json();
 
-    if (data?.results?.length > 0) {
+    if (data?.results?.length) {
       let r = data.results[0];
       load(r.latitude, r.longitude);
     } else {
@@ -132,7 +129,7 @@ async function suggestCities() {
 
     box.innerHTML = "";
 
-    if (!data || !data.results) return;
+    if (!data?.results) return;
 
     data.results.forEach(city => {
       let div = document.createElement("div");
@@ -147,62 +144,70 @@ async function suggestCities() {
 
       box.appendChild(div);
     });
-
   } catch (e) {
     console.log("suggest error");
   }
 }
 
-// fermeture dropdown
-document.addEventListener("click", (e) => {
-  const box = document.getElementById("suggestions");
-  const input = document.getElementById("search");
-
-  if (box && !box.contains(e.target) && e.target !== input) {
-    box.innerHTML = "";
-  }
-});
-
 // ---------------- LOAD ----------------
 async function load(lat, lon) {
   let data = await weather(lat, lon);
-  if (!data || !data.hourly) return;
+  if (!data) return;
 
-  let hourly = data.hourly;
-  if (
-  !hourly.temperature_2m ||
-  !hourly.relativehumidity_2m ||
-  !hourly.windspeed_10m
-) {
-  console.log("Données météo invalides");
-  return;
-}
-  let daily = data.daily;
+  let hourly = data.hourly || {};
+  let daily = data.daily || {};
+  let current = data.current_weather || {};
 
   let iMatin = findIndex(hourly, 8);
   let iMidi = findIndex(hourly, 13);
   let iSoir = findIndex(hourly, 20);
 
   let matin = predict(
-    hourly.temperature_2m[iMatin],
-    hourly.relativehumidity_2m[iMatin],
-    hourly.windspeed_10m[iMatin]
+    hourly.temperature_2m?.[iMatin],
+    hourly.relativehumidity_2m?.[iMatin],
+    hourly.windspeed_10m?.[iMatin]
   );
 
   let midi = predict(
-    hourly.temperature_2m[iMidi],
-    hourly.relativehumidity_2m[iMidi],
-    hourly.windspeed_10m[iMidi]
+    hourly.temperature_2m?.[iMidi],
+    hourly.relativehumidity_2m?.[iMidi],
+    hourly.windspeed_10m?.[iMidi]
   );
 
   let soir = predict(
-    hourly.temperature_2m[iSoir],
-    hourly.relativehumidity_2m[iSoir],
-    hourly.windspeed_10m[iSoir]
+    hourly.temperature_2m?.[iSoir],
+    hourly.relativehumidity_2m?.[iSoir],
+    hourly.windspeed_10m?.[iSoir]
   );
 
-  // ---------------- TITLE DYNAMIQUE ----------------
-  let avgWind = data.current_weather?.windspeed || 0;
+  // ---------------- UI SAFE ----------------
+  let tempEl = document.getElementById("temp");
+  let feelEl = document.getElementById("feel");
+  let humEl = document.getElementById("hum");
+  let windEl = document.getElementById("wind");
+  let forecastEl = document.getElementById("forecast");
+  let comfortEl = document.getElementById("comfort");
+  let titleEl = document.getElementById("forecastTitle");
+
+  if (tempEl) tempEl.innerText = current.temperature ?? "--";
+  if (feelEl) feelEl.innerText = isNaN(matin) ? "--" : matin.toFixed(1);
+  if (humEl) humEl.innerText = hourly.relativehumidity_2m?.[0] ?? "--";
+  if (windEl) windEl.innerText = current.windspeed ?? 0;
+
+  if (forecastEl) {
+    forecastEl.innerHTML =
+      `🌅 Matin: ${matin.toFixed(1)}°C |
+       ☀️ Midi: ${midi.toFixed(1)}°C |
+       🌙 Soir: ${soir.toFixed(1)}°C`;
+  }
+
+  let avgComfort = (matin + midi + soir) / 3;
+  if (isNaN(avgComfort)) avgComfort = current.temperature ?? 0;
+
+  if (comfortEl) comfortEl.innerText = comfortLevel(avgComfort);
+
+  // ---------------- TITLE ----------------
+  let avgWind = current.windspeed || 0;
 
   let title = "📊 Prévisions aujourd’hui";
 
@@ -214,57 +219,42 @@ async function load(lat, lon) {
     title = "📊 Prévisions aujourd’hui (vent fort 🌬️)";
   }
 
-  let avgComfort = (matin + midi + soir) / 3;
-
   if (avgComfort >= 18 && avgComfort <= 24 && avgWind < 15) {
     title = "📊 Prévisions aujourd’hui (confort idéal 🌤️)";
   }
 
-  let titleEl = document.getElementById("forecastTitle");
   if (titleEl) titleEl.innerText = title;
 
-  // ---------------- UI ----------------
-  document.getElementById("temp").innerText = data.current_weather.temperature;
-  document.getElementById("feel").innerText = isNaN(matin) ? "--" : matin.toFixed(1);
-  document.getElementById("hum").innerText = hourly.relativehumidity_2m[0];
-  document.getElementById("wind").innerText = avgWind;
-
-  document.getElementById("forecast").innerHTML =
-    `🌅 Matin: ${matin.toFixed(1)}°C |
-     ☀️ Midi: ${midi.toFixed(1)}°C |
-     🌙 Soir: ${soir.toFixed(1)}°C`;
-
-  let comfort = comfortLevel(avgComfort);
-  let comfortEl = document.getElementById("comfort");
-  if (comfortEl) comfortEl.innerText = comfort;
-
   // ---------------- DEMAIN ----------------
-  let tmin = daily.temperature_2m_min[1];
-  let tmax = daily.temperature_2m_max[1];
+  let tmin = daily.temperature_2m_min?.[1];
+  let tmax = daily.temperature_2m_max?.[1];
 
-  let avg = (tmin + tmax) / 2;
+  let avg = ((tmin ?? 0) + (tmax ?? 0)) / 2;
   let tomorrow = predict(avg, 50, 10);
 
-  document.getElementById("tomorrow").innerText =
-    `🌡️ Demain: ${tmin}°C / ${tmax}°C | Ressenti: ${tomorrow.toFixed(1)}°C`;
+  let tomorrowEl = document.getElementById("tomorrow");
+  if (tomorrowEl) {
+    tomorrowEl.innerText =
+      `🌡️ Demain: ${tmin}°C / ${tmax}°C | Ressenti: ${tomorrow.toFixed(1)}°C`;
+  }
 
-  // ---------------- ALERTES ----------------
-  let msg = "OK";
-  if (data.current_weather.temperature > 32) msg = "🔥 Forte chaleur";
-
-  document.getElementById("alert").innerText = msg;
+  // ---------------- ALERT ----------------
+  let alertEl = document.getElementById("alert");
+  if (alertEl) {
+    alertEl.innerText =
+      current.temperature > 32 ? "🔥 Forte chaleur" : "OK";
+  }
 }
 
 // ---------------- FEEDBACK ----------------
 function feedback(type) {
-  let t = parseFloat(document.getElementById("temp").innerText);
-  let h = parseFloat(document.getElementById("hum").innerText);
-  let w = parseFloat(document.getElementById("wind").innerText);
+  let t = parseFloat(document.getElementById("temp")?.innerText);
+  let h = parseFloat(document.getElementById("hum")?.innerText);
+  let w = parseFloat(document.getElementById("wind")?.innerText);
 
   if (isNaN(t)) return;
 
   let feel = t;
-
   if (type === "hot") feel += 2;
   if (type === "cold") feel -= 2;
 
@@ -278,11 +268,11 @@ function feedback(type) {
 
   localStorage.setItem("memory", JSON.stringify(memory));
 
-  document.getElementById("ai").innerText =
-    `IA apprentissage ✔ (${memory.length})`;
+  let ai = document.getElementById("ai");
+  if (ai) ai.innerText = `IA apprentissage ✔ (${memory.length})`;
 }
 
-// ---------------- PROFIL ----------------
+// ---------------- PROFILE ----------------
 function setProfile(type) {
   profile.type = type;
   localStorage.setItem("profile", JSON.stringify(profile));
