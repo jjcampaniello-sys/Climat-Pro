@@ -126,24 +126,39 @@ alert("Ville non trouvée");
 // ---------------- LOAD ----------------
 
 async function load(lat, lon){
+  try {
+    let data = await weather(lat, lon);
 
-let data = await weather(lat, lon);
+    // Vérification de sécurité pour s'assurer que les données existent
+    if (!data || !data.current_weather) {
+      alert("Impossible de charger les données météo.");
+      return;
+    }
 
-let t = data.current_weather.temperature;
-let w = data.current_weather.windspeed;
-let h = data.hourly.relative_humidity_2m[0];
+    let t = data.current_weather.temperature;
+    let w = data.current_weather.windspeed;
+    
+    // Valeur de secours (50%) si l'humidité horaire est manquante
+    let h = (data.hourly && data.hourly.relative_humidity_2m) ? data.hourly.relative_humidity_2m[0] : 50;
 
-let feel = predict(t,h,w);
+    let feel = predict(t, h, w);
 
-document.getElementById("temp").innerText = t;
-document.getElementById("feel").innerText = feel.toFixed(1);
-document.getElementById("hum").innerText = h;
-document.getElementById("wind").innerText = w;
+    // Affichage dans le HTML
+    document.getElementById("temp").innerText = t;
+    document.getElementById("feel").innerText = feel.toFixed(1);
+    document.getElementById("hum").innerText = h;
+    document.getElementById("wind").innerText = w;
 
-forecast(data);
-tomorrow(data);
-alerts(t,h);
+    // Lancement des autres affichages
+    forecast(data);
+    tomorrow(data);
+    alerts(t, h);
+    
+  } catch (error) {
+    console.error("Erreur lors du chargement :", error);
+  }
 }
+
 
 // ---------------- PREVISIONS ----------------
 
