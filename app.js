@@ -8,7 +8,7 @@ let profile = JSON.parse(localStorage.getItem("profile")) || {
 async function weather(lat, lon) {
   try {
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m&daily=temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m,time&daily=temperature_2m_max,temperature_2m_min&current_weather=true&timezone=auto`
     );
     return await res.json();
   } catch (e) {
@@ -37,9 +37,8 @@ function seasonalAdjustment(temp) {
   return temp;
 }
 
-// ---------------- MODELE RESSENTI ----------------
+// ---------------- MODELE IA ----------------
 function predict(temp, hum, wind) {
-
   let heat = humidex(temp, hum);
   let cold = windChill(temp, wind);
 
@@ -53,7 +52,7 @@ function predict(temp, hum, wind) {
   return feels;
 }
 
-// ---------------- COMFORT SYSTEM ----------------
+// ---------------- COMFORT ----------------
 function comfortLevel(feels) {
   if (feels < 5) return "🥶 Très froid";
   if (feels < 12) return "🧊 Froid confortable";
@@ -62,9 +61,21 @@ function comfortLevel(feels) {
   return "🥵 Inconfort chaud";
 }
 
+// ---------------- INDEX SAFE (IMPORTANT FIX) ----------------
+function findIndex(hourly, hourTarget) {
+  if (!hourly || !hourly.time) return 0;
+
+  for (let i = 0; i < hourly.time.length; i++) {
+    let d = new Date(hourly.time[i]);
+    if (d.getHours() === hourTarget) return i;
+  }
+
+  return 0;
+}
+
 // ---------------- GPS ----------------
 function gps() {
-  navigator.geolocation.getCurrentPosition(pos => {
+  navigator.geolocation.getCurrentPosition(async pos => {
     load(pos.coords.latitude, pos.coords.longitude);
   }, () => {
     alert("GPS indisponible ou refusé.");
@@ -76,17 +87,21 @@ async function searchCity() {
   let city = document.getElementById("search").value;
   if (!city) return;
 
-  const res = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`
-  );
+  try {
+    const res = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=fr`
+    );
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data?.results?.length > 0) {
-    let r = data.results[0];
-    load(r.latitude, r.longitude);
-  } else {
-    alert("Ville non trouvée");
+    if (data?.results?.length > 0) {
+      let r = data.results[0];
+      load(r.latitude, r.longitude);
+    } else {
+      alert("Ville non trouvée");
+    }
+  } catch (e) {
+    alert("Erreur API géocoding");
   }
 }
 
@@ -100,35 +115,42 @@ async function suggestCities() {
     return;
   }
 
-  const res = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=5`
-  );
+  try {
+    const res = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=5&language=fr`
+    );
 
-  const data = await res.json();
+    const data = await res.json();
 
-  box.innerHTML = "";
+    box.innerHTML = "";
 
-  data?.results?.forEach(city => {
-    let div = document.createElement("div");
-    div.className = "suggestion";
-    div.innerText = city.name;
+    if (!data || !data.results) return;
 
-    div.onclick = () => {
-      document.getElementById("search").value = city.name;
-      box.innerHTML = "";
-      load(city.latitude, city.longitude);
-    };
+    data.results.forEach(city => {
+      let div = document.createElement("div");
+      div.className = "suggestion";
+      div.innerText = city.name;
 
-    box.appendChild(div);
-  });
-});
+      div.onclick = () => {
+        document.getElementById("search").value = city.name;
+        box.innerHTML = "";
+        load(city.latitude, city.longitude);
+      };
+
+      box.appendChild(div);
+    });
+
+  } catch (e) {
+    console.log("suggest error");
+  }
+}
 
 // fermeture dropdown
 document.addEventListener("click", (e) => {
   const box = document.getElementById("suggestions");
   const input = document.getElementById("search");
 
-  if (!box.contains(e.target) && e.target !== input) {
+  if (box && !box.contains(e.target) && e.target !== input) {
     box.innerHTML = "";
   }
 });
@@ -136,23 +158,14 @@ document.addEventListener("click", (e) => {
 // ---------------- LOAD ----------------
 async function load(lat, lon) {
   let data = await weather(lat, lon);
-  if (!data) return;
+  if (!data || !data.hourly) return;
 
   let hourly = data.hourly;
   let daily = data.daily;
 
-  function getIndex(hour) {
-    let now = new Date();
-    let target = new Date();
-    target.setHours(hour, 0, 0, 0);
-
-    let diff = Math.floor((target - now) / 3600000);
-    return Math.max(0, diff);
-  }
-
-  let iMatin = getIndex(8);
-  let iMidi = getIndex(13);
-  let iSoir = getIndex(20);
+  let iMatin = findIndex(hourly, 8);
+  let iMidi = findIndex(hourly, 13);
+  let iSoir = findIndex(hourly, 20);
 
   let matin = predict(
     hourly.temperature_2m[iMatin],
@@ -174,7 +187,6 @@ async function load(lat, lon) {
 
   // ---------------- TITLE DYNAMIQUE ----------------
   let avgWind = data.current_weather.windspeed;
-  let avgTemp = data.current_weather.temperature;
 
   let title = "📊 Prévisions aujourd’hui";
 
@@ -192,9 +204,10 @@ async function load(lat, lon) {
     title = "📊 Prévisions aujourd’hui (confort idéal 🌤️)";
   }
 
-  document.getElementById("forecastTitle").innerText = title;
+  let titleEl = document.getElementById("forecastTitle");
+  if (titleEl) titleEl.innerText = title;
 
-  // ---------------- AFFICHAGE ----------------
+  // ---------------- UI ----------------
   document.getElementById("temp").innerText = data.current_weather.temperature;
   document.getElementById("feel").innerText = matin.toFixed(1);
   document.getElementById("hum").innerText = hourly.relativehumidity_2m[0];
@@ -205,9 +218,9 @@ async function load(lat, lon) {
      ☀️ Midi: ${midi.toFixed(1)}°C |
      🌙 Soir: ${soir.toFixed(1)}°C`;
 
-  // ---------------- COMFORT ----------------
   let comfort = comfortLevel(avgComfort);
-  document.getElementById("comfort").innerText = comfort;
+  let comfortEl = document.getElementById("comfort");
+  if (comfortEl) comfortEl.innerText = comfort;
 
   // ---------------- DEMAIN ----------------
   let tmin = daily.temperature_2m_min[1];
@@ -239,13 +252,11 @@ function feedback(type) {
   if (type === "hot") feel += 2;
   if (type === "cold") feel -= 2;
 
-  let hour = new Date().getHours();
-
   memory.push({
     temp: t,
     hum: h,
     wind: w,
-    hour,
+    hour: new Date().getHours(),
     feel
   });
 
