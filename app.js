@@ -133,3 +133,11 @@ async function suggestCities(){
     }
   } catch (err) {}
 }
+document.addEventListener("click", (e) => {
+  const box = document.getElementById("suggestions");
+  const input = document.getElementById("search");
+
+  if (!box.contains(e.target) && e.target !== input) {
+    box.innerHTML = "";
+  }
+});
