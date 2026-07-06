@@ -51,7 +51,7 @@ function gps(){
   });
 }
 
-// ---------------- RECHERCHE VILLE ----------------
+// ---------------- RECHERCHE VILLE (CORRIGÉE) ----------------
 async function searchCity(){
   let city = document.getElementById("search").value;
   if(!city) return;
@@ -62,8 +62,8 @@ async function searchCity(){
     );
     const data = await res.json();
 
+    // AJOUT DES [0] ICI POUR LIRE LE PREMIER RÉSULTAT DU TABLEAU
     if(data.results && data.results.length > 0){
-      // [0] permet de prendre la première ville trouvée
       load(data.results[0].latitude, data.results[0].longitude);
       let box = document.getElementById("suggestions");
       if(box) box.innerHTML = "";
@@ -74,6 +74,7 @@ async function searchCity(){
     console.error("Erreur Geocoding:", error);
   }
 }
+
 
 // ---------------- CENTRALISATION DU CHARGEMENT ----------------
 async function load(lat, lon){
