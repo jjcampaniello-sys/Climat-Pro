@@ -8,7 +8,7 @@ let profile = JSON.parse(localStorage.getItem("profile")) || {
 async function weather(lat, lon) {
   try {
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m&current_weather=true&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
     );
     return await res.json();
   } catch (e) {
@@ -16,7 +16,7 @@ async function weather(lat, lon) {
   }
 }
 
-// ---------------- IA SIMPLE ----------------
+// ---------------- IA ----------------
 function predict(temp, hum, wind) {
   temp = temp ?? 0;
   hum = hum ?? 50;
@@ -30,18 +30,11 @@ function predict(temp, hum, wind) {
   return feels;
 }
 
-// ---------------- IA COMFORT (3 niveaux UNIQUEMENT) ----------------
+// ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
   if (feels < 12) return "🥶 Froid";
   if (feels < 22) return "🙂 OK";
   return "🌡️ Chaud";
-}
-
-// ---------------- MÉTÉO ICON ----------------
-function weatherIcon(temp) {
-  if (temp < 10) return "❄️";
-  if (temp < 20) return "🌤️";
-  return "☀️";
 }
 
 // ---------------- GPS ----------------
@@ -115,31 +108,28 @@ async function load(lat, lon) {
   let hourly = data.hourly || {};
   let daily = data.daily || {};
 
-  // 🔥 BASE SAFE DATA
   let temp = current.temperature ?? 0;
   let wind = current.windspeed ?? 5;
   let hum = hourly.relativehumidity_2m?.[0] ?? 50;
 
   let feel = predict(temp, hum, wind);
 
-  // ---------------- SIMULATION MATIN / MIDI / SOIR ----------------
+  // ---------------- MATIN / MIDI / SOIR ----------------
   let matin = predict(temp - 2, hum, wind);
   let midi = predict(temp, hum, wind);
   let soir = predict(temp - 1, hum, wind);
 
-  // ---------------- UI BASE ----------------
   document.getElementById("temp").innerText = temp;
   document.getElementById("feel").innerText = feel.toFixed(1);
   document.getElementById("hum").innerText = hum;
   document.getElementById("wind").innerText = wind;
 
-  // ---------------- PRÉVISIONS AVEC ÉMOJIS ----------------
   document.getElementById("forecast").innerHTML =
-    `🌅 ${weatherIcon(matin)} Matin: ${matin.toFixed(1)}°C<br>
-     ☀️ ${weatherIcon(midi)} Midi: ${midi.toFixed(1)}°C<br>
-     🌙 ${weatherIcon(soir)} Soir: ${soir.toFixed(1)}°C`;
+    `🌅 Matin: ${matin.toFixed(1)}°C |
+     ☀️ Midi: ${midi.toFixed(1)}°C |
+     🌙 Soir: ${soir.toFixed(1)}°C`;
 
-  // ---------------- IA ----------------
+  // ---------------- IA FIXE ----------------
   document.getElementById("comfort").innerText =
     comfortLevel(feel);
 
@@ -151,9 +141,16 @@ async function load(lat, lon) {
 
   document.getElementById("forecastTitle").innerText = title;
 
-  // ---------------- DEMAIN ----------------
-  let tmin = daily.temperature_2m_min?.[1] ?? temp;
-  let tmax = daily.temperature_2m_max?.[1] ?? temp;
+  // ---------------- DEMAIN (FIX MIN/MAX BUG) ----------------
+  let tmin =
+    daily.temperature_2m_min?.[1] ??
+    daily.temperature_2m_min?.[0] ??
+    temp;
+
+  let tmax =
+    daily.temperature_2m_max?.[1] ??
+    daily.temperature_2m_max?.[0] ??
+    temp;
 
   let tomorrow = predict((tmin + tmax) / 2, 50, 10);
 
@@ -170,9 +167,7 @@ function feedback(type) {
   let t = parseFloat(document.getElementById("temp").innerText);
   if (isNaN(t)) return;
 
-  let feel = t;
-
-  memory.push({ temp: t, feel, hour: new Date().getHours() });
+  memory.push({ temp: t, feel: t, hour: new Date().getHours() });
 
   localStorage.setItem("memory", JSON.stringify(memory));
 
