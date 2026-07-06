@@ -5,7 +5,7 @@ let memory = JSON.parse(localStorage.getItem("memory")) || [];
 const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
 
 function getCacheKey(lat, lon){
-return "weather_${lat.toFixed(2)}_${lon.toFixed(2)}";
+return 'weather_${lat.toFixed(2)}_${lon.toFixed(2)}';
 }
 
 function saveCache(lat, lon, data){
@@ -42,7 +42,7 @@ return cached;
 console.log("🌐 appel API");
 
 const res = await fetch(
-"https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,weathercode"
+'https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,weathercode'
 );
 
 let data = await res.json();
@@ -111,7 +111,7 @@ async function searchCity(){
 let city = document.getElementById("search").value;
 
 const res = await fetch(
-"https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1"
+'https://geocoding-api.open-meteo.com/v1/search?name=${city}&count='
 );
 
 const data = await res.json();
@@ -163,7 +163,7 @@ let iconN = getIcon(code[12], w[12]);
 let iconE = getIcon(code[18], w[18]);
 
 document.getElementById("forecast").innerHTML =
-"${iconM} Matin: ${m.toFixed(1)}°C<br> ${iconN} Midi: ${n.toFixed(1)}°C<br> ${iconE} Soir: ${e.toFixed(1)}°C";
+'${iconM} Matin: ${m.toFixed(1)}°C<br> ${iconN} Midi: ${n.toFixed(1)}°C<br> ${iconE} Soir: ${e.toFixed(1)}°C';
 }
 
 // ---------------- DEMAIN ----------------
