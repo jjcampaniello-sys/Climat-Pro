@@ -94,8 +94,10 @@ async function searchCity(){
   try {
     const res = await fetch(`https://open-meteo.com{encodeURIComponent(city)}&count=1`);
     const data = await res.json();
+    
+    // Correction de l'index du tableau [0]
     if(data.results && data.results.length > 0){
-      let premier = data.results[0]; // Correction de l'index du tableau [1]
+      let premier = data.results[0]; 
       load(premier.latitude, premier.longitude);
       document.getElementById("suggestions").innerHTML = ""; 
     } else {
@@ -140,7 +142,7 @@ function forecast(data){
   let windTab = data.hourly.windspeed_10m || [];
   let codeTab = data.hourly.weathercode || [];
 
-  // Sécurisation stricte des index (8h, 12h, 18h) avec repli si vide
+  // Lecture des index horaires précis, [12], [18] avec valeurs de secours
   let tMatin = tempTab.length > 8 ? tempTab[8] : 15;
   let tMidi = tempTab.length > 12 ? tempTab[12] : 20;
   let tSoir = tempTab.length > 18 ? tempTab[18] : 17;
@@ -173,6 +175,7 @@ function tomorrow(data){
   let humTab = data.hourly.relative_humidity_2m || [];
   let windTab = data.hourly.windspeed_10m || [];
 
+  // Lecture de la 32ème heure [32] (le lendemain midi)
   let tDemain = tempTab.length > 32 ? tempTab[32] : 15;
   let hDemain = humTab.length > 32 ? humTab[32] : 50;
   let wDemain = windTab.length > 32 ? windTab[32] : 10;
