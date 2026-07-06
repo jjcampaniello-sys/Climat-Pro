@@ -8,7 +8,7 @@ let profile = JSON.parse(localStorage.getItem("profile")) || {
 async function weather(lat, lon) {
   try {
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m,weathercode&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
     );
     return await res.json();
   } catch (e) {
@@ -29,7 +29,23 @@ function predict(temp, hum, wind) {
 
   return feels;
 }
+function getSafe(arr, index, fallback) {
+  if (!arr || arr[index] === undefined || arr[index] === null) {
+    return fallback;
+  }
+  return arr[index];
+}
 
+function weatherIconFromCode(code) {
+  if (code === 0) return "☀️";
+  if (code <= 3) return "🌤️";
+  if (code <= 48) return "🌫️";
+  if (code <= 67) return "🌧️";
+  if (code <= 77) return "❄️";
+  if (code <= 82) return "🌦️";
+  if (code <= 99) return "⛈️";
+  return "❓";
+}
 // ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
   if (feels < 10) return "🥶 Froid";
@@ -116,9 +132,29 @@ async function load(lat, lon) {
   let feel = predict(temp, hum, wind);
 
   // ---------------- MATIN / MIDI / SOIR ----------------
-  let matin = predict(temp - 2, hum, wind);
-  let midi = predict(temp, hum, wind);
-  let soir = predict(temp - 1, hum, wind);
+  let iMatin = 8;
+let iMidi = 13;
+let iSoir = 20;
+
+let tMatin = getSafe(hourly.temperature_2m, iMatin, temp);
+let tMidi = getSafe(hourly.temperature_2m, iMidi, temp);
+let tSoir = getSafe(hourly.temperature_2m, iSoir, temp);
+
+let hMatin = getSafe(hourly.relativehumidity_2m, iMatin, hum);
+let hMidi = getSafe(hourly.relativehumidity_2m, iMidi, hum);
+let hSoir = getSafe(hourly.relativehumidity_2m, iSoir, hum);
+
+let wMatin = getSafe(hourly.windspeed_10m, iMatin, wind);
+let wMidi = getSafe(hourly.windspeed_10m, iMidi, wind);
+let wSoir = getSafe(hourly.windspeed_10m, iSoir, wind);
+
+let cMatin = getSafe(hourly.weathercode, iMatin, 0);
+let cMidi = getSafe(hourly.weathercode, iMidi, 0);
+let cSoir = getSafe(hourly.weathercode, iSoir, 0);
+
+let matin = predict(tMatin, hMatin, wMatin);
+let midi = predict(tMidi, hMidi, wMidi);
+let soir = predict(tSoir, hSoir, wSoir);
 
   document.getElementById("temp").innerText = temp;
   document.getElementById("feel").innerText = feel.toFixed(1);
@@ -126,10 +162,9 @@ async function load(lat, lon) {
   document.getElementById("wind").innerText = wind;
 
   document.getElementById("forecast").innerHTML =
-    `🌅 Matin: ${matin.toFixed(1)}°C |
-     ☀️ Midi: ${midi.toFixed(1)}°C |
-     🌙 Soir: ${soir.toFixed(1)}°C`;
-
+  `${weatherIconFromCode(cMatin)} Matin: ${matin.toFixed(1)}°C<br>
+   ${weatherIconFromCode(cMidi)} Midi: ${midi.toFixed(1)}°C<br>
+   ${weatherIconFromCode(cSoir)} Soir: ${soir.toFixed(1)}°C`;
   // ---------------- IA FIXE ----------------
   document.getElementById("comfort").innerText =
     comfortLevel(feel);
