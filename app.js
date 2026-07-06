@@ -180,7 +180,7 @@ async function load(lat, lon) {
   document.getElementById("wind").innerText = data.current_weather.windspeed;
 
   document.getElementById("forecast").innerHTML =
-    `🌅 Température ressentie matin: ${matin.toFixed(1)}°C |
+    `🌅 matin: ${matin.toFixed(1)}°C |
      ☀️ Midi: ${midi.toFixed(1)}°C |
      🌙 Soir: ${soir.toFixed(1)}°C`;
 
