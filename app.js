@@ -1,19 +1,48 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 
-// ---------------- API ----------------
+// ---------------- CACHE REQUÊTES ----------------
+const CACHE_TIME = 10 * 60 * 1000; 
+
+function getCacheKey(lat, lon){
+  return `weather_${lat.toFixed(2)}_${lon.toFixed(2)}`;
+}
+
+function saveCache(lat, lon, data){
+  localStorage.setItem(getCacheKey(lat, lon), JSON.stringify({
+    time: Date.now(),
+    data: data
+  }));
+}
+
+function loadCache(lat, lon){
+  let cache = localStorage.getItem(getCacheKey(lat, lon));
+  if(!cache) return null;
+  cache = JSON.parse(cache);
+  if(Date.now() - cache.time > CACHE_TIME){
+    return null;
+  }
+  return cache.data;
+}
+
+// ---------------- APPEL API METEO ----------------
 async function weather(lat, lon){
+  let cached = loadCache(lat, lon);
+  if(cached) return cached;
+
   try {
     const res = await fetch(
       `https://open-meteo.com{lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m,weathercode`
     );
-    return await res.json();
+    let data = await res.json();
+    saveCache(lat, lon, data);
+    return data;
   } catch (e) {
     console.error("Erreur API Météo:", e);
     return null;
   }
 }
 
-// ---------------- IA CONTROLE ----------------
+// ---------------- ALGORITHME IA ----------------
 function predict(temp, hum, wind){
   if(!memory || memory.length === 0) return temp;
   let total = 0;
@@ -47,11 +76,11 @@ function gps(){
   navigator.geolocation.getCurrentPosition(pos => {
     load(pos.coords.latitude, pos.coords.longitude);
   }, () => {
-    alert("Géolocalisation refusée.");
+    alert("Géolocalisation refusée ou inactive.");
   });
 }
 
-// ---------------- RECHERCHE VILLE (CORRIGÉE) ----------------
+// ---------------- RECHERCHE VILLE ----------------
 async function searchCity(){
   let city = document.getElementById("search").value;
   if(!city) return;
@@ -62,11 +91,11 @@ async function searchCity(){
     );
     const data = await res.json();
 
-    // AJOUT DES [0] ICI POUR LIRE LE PREMIER RÉSULTAT DU TABLEAU
+    // Correction avec [0] pour cibler la première ville trouvée
     if(data.results && data.results.length > 0){
-      load(data.results[0].latitude, data.results[0].longitude);
-      let box = document.getElementById("suggestions");
-      if(box) box.innerHTML = "";
+      let premierResultat = data.results[0]; 
+      load(premierResultat.latitude, premierResultat.longitude);
+      document.getElementById("suggestions").innerHTML = ""; 
     } else {
       alert("Ville non trouvée");
     }
@@ -75,12 +104,9 @@ async function searchCity(){
   }
 }
 
-
-// ---------------- CENTRALISATION DU CHARGEMENT ----------------
-// ---------------- LOAD REVISITÉ ----------------
+// ---------------- LOAD CENTRAL ----------------
 async function load(lat, lon){
   let data = await weather(lat, lon);
-  
   if(!data || !data.current_weather || !data.hourly) {
     alert("Données météo introuvables.");
     return;
@@ -89,8 +115,10 @@ async function load(lat, lon){
   let t = data.current_weather.temperature;
   let w = data.current_weather.windspeed;
   
-  // Récupération sécurisée de l'humidité actuelle (index 0 du tableau)
-  let h = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[0] : 50;
+  // Extraction sécurisée de la première valeur du tableau pour l'humidité actuelle
+  let h = (data.hourly.relative_humidity_2m && data.hourly.relative_humidity_2m.length > 0) 
+          ? data.hourly.relative_humidity_2m[0] 
+          : 50;
 
   let feel = predict(t, h, w);
 
@@ -104,7 +132,7 @@ async function load(lat, lon){
   alerts(t, h);
 }
 
-// ---------------- PREVISIONS DU JOUR (MATIN, MIDI, SOIR) ----------------
+// ---------------- PREVISIONS (MATIN, MIDI, SOIR) ----------------
 function forecast(data){
   if(!data.hourly || !data.hourly.temperature_2m) return;
   
@@ -113,7 +141,7 @@ function forecast(data){
   let windTab = data.hourly.windspeed_10m || [];
   let codeTab = data.hourly.weathercode || [];
 
-  // Extraction des valeurs spécifiques aux bons index horaires (8h, 12h, 18h)
+  // Index horaires fixes (8h = index 8, 12h = index 12, 18h = index 18)
   let tMatin = tempTab[8] !== undefined ? tempTab[8] : 15;
   let tMidi = tempTab[12] !== undefined ? tempTab[12] : 20;
   let tSoir = tempTab[18] !== undefined ? tempTab[18] : 17;
@@ -126,32 +154,28 @@ function forecast(data){
   let wMidi = windTab[12] || 15;
   let wSoir = windTab[18] || 12;
 
-  // Calcul du ressenti IA pour chaque moment de la journée
   let feelMatin = predict(tMatin, hMatin, wMatin);
   let feelMidi = predict(tMidi, hMidi, wMidi);
   let feelSoir = predict(tSoir, hSoir, wSoir);
 
-  // Sélection des icônes correspondantes
   let iconMatin = getIcon(codeTab[8] || 0, wMatin);
   let iconMidi = getIcon(codeTab[12] || 0, wMidi);
   let iconSoir = getIcon(codeTab[18] || 0, wSoir);
 
-  // Affichage final dans la carte HTML
   document.getElementById("forecast").innerHTML =
-    `${iconMatin} Matin : ${tMatin}°C (Ressenti IA : ${feelMatin.toFixed(1)}°C)<br>
-     ${iconMidi} Midi : ${tMidi}°C (Ressenti IA : ${feelMidi.toFixed(1)}°C)<br>
-     ${iconSoir} Soir : ${tSoir}°C (Ressenti IA : ${feelSoir.toFixed(1)}°C)`;
+    `${iconMatin} Matin : ${tMatin}°C (Ressenti IA : ${feelMatin.toFixed(1)}°C)<br>` +
+    `${iconMidi} Midi : ${tMidi}°C (Ressenti IA : ${feelMidi.toFixed(1)}°C)<br>` +
+    `${iconSoir} Soir : ${tSoir}°C (Ressenti IA : ${feelSoir.toFixed(1)}°C)`;
 }
-
 
 // ---------------- DEMAIN ----------------
 function tomorrow(data){
   if(!data.hourly || !data.hourly.temperature_2m) return;
-  let t = data.hourly.temperature_2m[24] || 15;
-  let h = data.hourly.relative_humidity_2m[24] || 50;
-  let w = data.hourly.windspeed_10m[24] || 10;
+  let tDemain = data.hourly.temperature_2m[24] !== undefined ? data.hourly.temperature_2m[24] : 15;
+  let hDemain = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[24] : 50;
+  let wDemain = data.hourly.windspeed_10m ? data.hourly.windspeed_10m[24] : 10;
 
-  let f = predict(t, h, w);
+  let f = predict(tDemain, hDemain, wDemain);
   document.getElementById("tomorrow").innerText = `Ressenti IA : ${f.toFixed(1)}°C`;
 }
 
@@ -163,7 +187,7 @@ function alerts(t, h){
   document.getElementById("alert").innerText = msg;
 }
 
-// ---------------- APPRENTISSAGE IA ----------------
+// ---------------- FEEDBACK ----------------
 function feedback(type){
   let t = parseFloat(document.getElementById("temp").innerText);
   let h = parseFloat(document.getElementById("hum").innerText);
@@ -180,7 +204,7 @@ function feedback(type){
   document.getElementById("ai").innerText = `IA a appris ✔ (${memory.length} données)`;
 }
 
-// ---------------- SUGGESTIONS AUTOMATIQUES ----------------
+// ---------------- SUGGESTIONS ----------------
 let timeout;
 async function suggestCities(){
   let input = document.getElementById("search").value;
@@ -195,7 +219,6 @@ async function suggestCities(){
   clearTimeout(timeout);
   timeout = setTimeout(async () => {
     try {
-      // CORRECTION ICI : Utilisation de la bonne adresse Geocoding et des backticks complets avec $
       const res = await fetch(
         `https://open-meteo.com{encodeURIComponent(input)}&count=5`
       );
@@ -223,4 +246,3 @@ async function suggestCities(){
     }
   }, 250);
 }
-
