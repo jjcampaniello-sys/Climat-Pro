@@ -3,7 +3,9 @@ let memory = JSON.parse(localStorage.getItem("memory")) || [];
 // ---------------- APPEL API METEO ACTUELLE ----------------
 async function weather(lat, lon) {
   try {
-    const res = await fetch(`https://open-meteo.com{lat}&longitude=${lon}&current_weather=true`);
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+    );
     return await res.json();
   } catch (e) {
     return null;
@@ -40,14 +42,16 @@ function gps(){
 async function searchCity(){
   let city = document.getElementById("search").value;
   if(!city) return;
+
   try {
-    const res = await fetch(`https://open-meteo.com{encodeURIComponent(city)}&count=1`);
+    const res = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`
+    );
     const data = await res.json();
-    
-    // Utilisation d'une syntaxe alternative sans crochets pour éviter le bug de transmission
+
     if(data && data.results && data.results.length > 0){
-      let premierResultat = data.results.shift(); 
-      load(premierResultat.latitude, premierResultat.longitude);
+      let result = data.results[0];
+      load(result.latitude, result.longitude);
     } else {
       alert("Ville non trouvée");
     }
@@ -55,7 +59,6 @@ async function searchCity(){
     alert("Erreur de connexion au service de recherche.");
   }
 }
-
 // ---------------- CHARGEMENT CENTRALISÉ ----------------
 async function load(lat, lon){
   let data = await weather(lat, lon);
@@ -109,7 +112,9 @@ async function suggestCities(){
     return;
   }
   try {
-    const res = await fetch(`https://open-meteo.com{encodeURIComponent(input)}&count=3`);
+    const res = await fetch(
+  `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=5`
+);
     const data = await res.json();
     box.innerHTML = "";
     if(data && data.results) {
