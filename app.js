@@ -1,7 +1,7 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 
 let profile = JSON.parse(localStorage.getItem("profile")) || {
-  type: "normal"
+  type: "normal" // cold | normal | hot
 };
 
 // ---------------- METEO ----------------
@@ -31,20 +31,13 @@ function windChill(temp, wind) {
 function seasonalAdjustment(temp) {
   let month = new Date().getMonth();
 
-  // été
-  if (month >= 5 && month <= 8) {
-    return temp - 1.2;
-  }
-
-  // hiver
-  if (month <= 1 || month === 11) {
-    return temp + 1.2;
-  }
+  if (month >= 5 && month <= 8) return temp - 1.2; // été
+  if (month <= 1 || month === 11) return temp + 1.2; // hiver
 
   return temp;
 }
 
-// ---------------- IA RESSENTI ----------------
+// ---------------- MODELE RESSENTI ----------------
 function predict(temp, hum, wind) {
 
   let heat = humidex(temp, hum);
@@ -52,14 +45,21 @@ function predict(temp, hum, wind) {
 
   let feels = (heat + cold) / 2;
 
-  // profil utilisateur
   if (profile.type === "cold") feels -= 1.5;
   if (profile.type === "hot") feels += 1.5;
 
-  // saison
   feels = seasonalAdjustment(feels);
 
   return feels;
+}
+
+// ---------------- COMFORT SYSTEM ----------------
+function comfortLevel(feels) {
+  if (feels < 5) return "🥶 Très froid";
+  if (feels < 12) return "🧊 Froid confortable";
+  if (feels < 20) return "🌤️ Idéal";
+  if (feels < 27) return "🌡️ Chaud";
+  return "🥵 Inconfort chaud";
 }
 
 // ---------------- GPS ----------------
@@ -136,7 +136,6 @@ document.addEventListener("click", (e) => {
 // ---------------- LOAD ----------------
 async function load(lat, lon) {
   let data = await weather(lat, lon);
-
   if (!data) return;
 
   let hourly = data.hourly;
@@ -173,23 +172,48 @@ async function load(lat, lon) {
     hourly.windspeed_10m[iSoir]
   );
 
+  // ---------------- TITLE DYNAMIQUE ----------------
+  let avgWind = data.current_weather.windspeed;
+  let avgTemp = data.current_weather.temperature;
+
+  let title = "📊 Prévisions aujourd’hui";
+
+  if (profile.type === "cold") {
+    title = "📊 Prévisions aujourd’hui (frileux ❄️)";
+  }
+
+  if (avgWind > 25) {
+    title = "📊 Prévisions aujourd’hui (vent fort 🌬️)";
+  }
+
+  let avgComfort = (matin + midi + soir) / 3;
+
+  if (avgComfort >= 18 && avgComfort <= 24 && avgWind < 15) {
+    title = "📊 Prévisions aujourd’hui (confort idéal 🌤️)";
+  }
+
+  document.getElementById("forecastTitle").innerText = title;
+
   // ---------------- AFFICHAGE ----------------
   document.getElementById("temp").innerText = data.current_weather.temperature;
   document.getElementById("feel").innerText = matin.toFixed(1);
   document.getElementById("hum").innerText = hourly.relativehumidity_2m[0];
-  document.getElementById("wind").innerText = data.current_weather.windspeed;
+  document.getElementById("wind").innerText = avgWind;
 
   document.getElementById("forecast").innerHTML =
-    `🌅 matin: ${matin.toFixed(1)}°C |
+    `🌅 Matin: ${matin.toFixed(1)}°C |
      ☀️ Midi: ${midi.toFixed(1)}°C |
      🌙 Soir: ${soir.toFixed(1)}°C`;
+
+  // ---------------- COMFORT ----------------
+  let comfort = comfortLevel(avgComfort);
+  document.getElementById("comfort").innerText = comfort;
 
   // ---------------- DEMAIN ----------------
   let tmin = daily.temperature_2m_min[1];
   let tmax = daily.temperature_2m_max[1];
 
   let avg = (tmin + tmax) / 2;
-
   let tomorrow = predict(avg, 50, 10);
 
   document.getElementById("tomorrow").innerText =
