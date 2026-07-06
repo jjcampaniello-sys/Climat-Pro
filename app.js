@@ -32,8 +32,8 @@ function predict(temp, hum, wind) {
 
 // ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
-  if (feels < 12) return "🥶 Froid";
-  if (feels < 22) return "🙂 OK";
+  if (feels < 10) return "🥶 Froid";
+  if (feels >= 10 && feels <= 22) return "🙂 OK";
   return "☀️ Chaud";
 }
 
