@@ -77,16 +77,20 @@ async function searchCity(){
 
 
 // ---------------- CENTRALISATION DU CHARGEMENT ----------------
+// ---------------- LOAD REVISITÉ ----------------
 async function load(lat, lon){
   let data = await weather(lat, lon);
-  if(!data || !data.current_weather) {
+  
+  if(!data || !data.current_weather || !data.hourly) {
     alert("Données météo introuvables.");
     return;
   }
 
   let t = data.current_weather.temperature;
   let w = data.current_weather.windspeed;
-  let h = (data.hourly && data.hourly.relative_humidity_2m) ? data.hourly.relative_humidity_2m[0] : 50;
+  
+  // Récupération sécurisée de l'humidité actuelle (index 0 du tableau)
+  let h = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[0] : 50;
 
   let feel = predict(t, h, w);
 
@@ -100,28 +104,45 @@ async function load(lat, lon){
   alerts(t, h);
 }
 
-// ---------------- PREVISIONS ENCADREES ----------------
+// ---------------- PREVISIONS DU JOUR (MATIN, MIDI, SOIR) ----------------
 function forecast(data){
-  if(!data.hourly) return;
+  if(!data.hourly || !data.hourly.temperature_2m) return;
   
-  // Récupération des valeurs uniques pour le Matin (index 8), Midi (index 12), Soir (index 18)
-  let tM = data.hourly.temperature_2m[8] || 15;
-  let tN = data.hourly.temperature_2m[12] || 15;
-  let tE = data.hourly.temperature_2m[18] || 15;
+  let tempTab = data.hourly.temperature_2m;
+  let humTab = data.hourly.relative_humidity_2m || [];
+  let windTab = data.hourly.windspeed_10m || [];
+  let codeTab = data.hourly.weathercode || [];
 
-  let hM = data.hourly.relative_humidity_2m[8] || 50;
-  let wM = data.hourly.windspeed_10m[8] || 10;
-  let codeM = data.hourly.weathercode[8] || 0;
+  // Extraction des valeurs spécifiques aux bons index horaires (8h, 12h, 18h)
+  let tMatin = tempTab[8] !== undefined ? tempTab[8] : 15;
+  let tMidi = tempTab[12] !== undefined ? tempTab[12] : 20;
+  let tSoir = tempTab[18] !== undefined ? tempTab[18] : 17;
 
-  let m = predict(tM, hM, wM);
-  let n = predict(tN, hM, wM); // Simplifié pour éviter le NaN
-  let e = predict(tE, hM, wM);
+  let hMatin = humTab[8] || 60;
+  let hMidi = humTab[12] || 50;
+  let hSoir = humTab[18] || 55;
 
-  let iconM = getIcon(codeM, wM);
+  let wMatin = windTab[8] || 10;
+  let wMidi = windTab[12] || 15;
+  let wSoir = windTab[18] || 12;
 
+  // Calcul du ressenti IA pour chaque moment de la journée
+  let feelMatin = predict(tMatin, hMatin, wMatin);
+  let feelMidi = predict(tMidi, hMidi, wMidi);
+  let feelSoir = predict(tSoir, hSoir, wSoir);
+
+  // Sélection des icônes correspondantes
+  let iconMatin = getIcon(codeTab[8] || 0, wMatin);
+  let iconMidi = getIcon(codeTab[12] || 0, wMidi);
+  let iconSoir = getIcon(codeTab[18] || 0, wSoir);
+
+  // Affichage final dans la carte HTML
   document.getElementById("forecast").innerHTML =
-    `${iconM} Matin: ${m.toFixed(1)}°C<br> ${iconM} Midi: ${n.toFixed(1)}°C<br> ${iconM} Soir: ${e.toFixed(1)}°C`;
+    `${iconMatin} Matin : ${tMatin}°C (Ressenti IA : ${feelMatin.toFixed(1)}°C)<br>
+     ${iconMidi} Midi : ${tMidi}°C (Ressenti IA : ${feelMidi.toFixed(1)}°C)<br>
+     ${iconSoir} Soir : ${tSoir}°C (Ressenti IA : ${feelSoir.toFixed(1)}°C)`;
 }
+
 
 // ---------------- DEMAIN ----------------
 function tomorrow(data){
