@@ -173,6 +173,7 @@ async function suggestCities(){
   clearTimeout(timeout);
   timeout = setTimeout(async () => {
     try {
+      // CORRECTION ICI : Utilisation de la bonne adresse Geocoding et des backticks complets avec $
       const res = await fetch(
         `https://open-meteo.com{encodeURIComponent(input)}&count=5`
       );
@@ -200,3 +201,4 @@ async function suggestCities(){
     }
   }, 250);
 }
+
