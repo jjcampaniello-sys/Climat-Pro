@@ -242,12 +242,25 @@ function updateProfile(){
   }
 
   let total = 0;
+let weightTotal = 0;
 
-  memory.forEach(m => {
-    total += m.correction || 0;
-  });
+let now = Date.now();
 
-  let average = total / memory.length;
+memory.forEach(m => {
+
+  let ageDays = (now - m.date) / (1000 * 60 * 60 * 24);
+
+  // Les données récentes comptent davantage
+  let weight = Math.exp(-ageDays / 60);
+
+  total += (m.correction || 0) * weight;
+  weightTotal += weight;
+
+});
+
+let average = weightTotal > 0 
+  ? total / weightTotal 
+  : 0;
 
   profile.score = average;
 
