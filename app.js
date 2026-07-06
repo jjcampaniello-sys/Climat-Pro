@@ -120,8 +120,7 @@ async function suggestCities(){
     if(data && data.results) {
       data.results.forEach(city => {
         let div = document.createElement("div");
-        div.style.padding = "6px";
-        div.style.cursor = "pointer";
+        div.className = "suggestion";
         div.innerText = city.name;
         div.addEventListener("click", () => {
           document.getElementById("search").value = city.name;
