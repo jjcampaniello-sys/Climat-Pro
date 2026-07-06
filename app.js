@@ -34,7 +34,7 @@ function predict(temp, hum, wind) {
 function comfortLevel(feels) {
   if (feels < 12) return "🥶 Froid";
   if (feels < 22) return "🙂 OK";
-  return "🌡️ Chaud";
+  return "☀️ Chaud";
 }
 
 // ---------------- GPS ----------------
