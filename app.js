@@ -65,12 +65,20 @@ function comfortLevel(feels) {
 function findIndex(hourly, hourTarget) {
   if (!hourly || !hourly.time) return 0;
 
+  let bestIndex = 0;
+  let bestDiff = 999;
+
   for (let i = 0; i < hourly.time.length; i++) {
     let d = new Date(hourly.time[i]);
-    if (d.getHours() === hourTarget) return i;
+    let diff = Math.abs(d.getHours() - hourTarget);
+
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = i;
+    }
   }
 
-  return 0;
+  return bestIndex;
 }
 
 // ---------------- GPS ----------------
@@ -161,6 +169,14 @@ async function load(lat, lon) {
   if (!data || !data.hourly) return;
 
   let hourly = data.hourly;
+  if (
+  !hourly.temperature_2m ||
+  !hourly.relativehumidity_2m ||
+  !hourly.windspeed_10m
+) {
+  console.log("Données météo invalides");
+  return;
+}
   let daily = data.daily;
 
   let iMatin = findIndex(hourly, 8);
@@ -186,7 +202,7 @@ async function load(lat, lon) {
   );
 
   // ---------------- TITLE DYNAMIQUE ----------------
-  let avgWind = data.current_weather.windspeed;
+  let avgWind = data.current_weather?.windspeed || 0;
 
   let title = "📊 Prévisions aujourd’hui";
 
@@ -209,7 +225,7 @@ async function load(lat, lon) {
 
   // ---------------- UI ----------------
   document.getElementById("temp").innerText = data.current_weather.temperature;
-  document.getElementById("feel").innerText = matin.toFixed(1);
+  document.getElementById("feel").innerText = isNaN(matin) ? "--" : matin.toFixed(1);
   document.getElementById("hum").innerText = hourly.relativehumidity_2m[0];
   document.getElementById("wind").innerText = avgWind;
 
