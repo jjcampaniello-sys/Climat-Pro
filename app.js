@@ -1,7 +1,8 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 
 let profile = JSON.parse(localStorage.getItem("profile")) || {
-  type: "normal"
+  type: "normal",
+  score: 0
 };
 
 // ---------------- METEO ----------------
@@ -199,20 +200,69 @@ let soir = predict(tSoir, hSoir, wSoir);
 }
 
 // ---------------- FEEDBACK ----------------
+// ---------------- FEEDBACK IA ----------------
 function feedback(type) {
+
   let t = parseFloat(document.getElementById("temp").innerText);
+
   if (isNaN(t)) return;
 
-  memory.push({ temp: t, feel: t, hour: new Date().getHours() });
+  let correction = 0;
 
-  localStorage.setItem("memory", JSON.stringify(memory));
+  if (type === "hot") correction = 2;
+  if (type === "cold") correction = -2;
+  if (type === "ok") correction = 0;
+
+  memory.push({
+    temp: t,
+    feel: t + correction,
+    correction: correction,
+    hour: new Date().getHours(),
+    date: Date.now()
+  });
+
+  localStorage.setItem(
+    "memory",
+    JSON.stringify(memory)
+  );
+
+  updateProfile();
 
   document.getElementById("ai").innerText =
-    `IA apprentissage ✔ (${memory.length})`;
+    `IA apprentissage ✔ (${memory.length} données)`;
 }
 
-// ---------------- PROFILE ----------------
-function setProfile(type) {
-  profile.type = type;
-  localStorage.setItem("profile", JSON.stringify(profile));
+// ------// ---------------- PROFIL AUTOMATIQUE IA ----------------
+// ---------------- PROFIL AUTOMATIQUE IA ----------------
+function updateProfile(){
+
+  if(memory.length === 0) {
+    profile.type = "normal";
+    return;
+  }
+
+  let total = 0;
+
+  memory.forEach(m => {
+    total += m.correction || 0;
+  });
+
+  let average = total / memory.length;
+
+  profile.score = average;
+
+  if(average < -0.8){
+    profile.type = "cold";
+  }
+  else if(average > 0.8){
+    profile.type = "hot";
+  }
+  else{
+    profile.type = "normal";
+  }
+
+  localStorage.setItem(
+    "profile",
+    JSON.stringify(profile)
+  );
 }
