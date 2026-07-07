@@ -1,5 +1,8 @@
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
-
+let archive = JSON.parse(localStorage.getItem("archive")) || {
+  total: 0,
+  count: 0
+};
 let profile = JSON.parse(localStorage.getItem("profile")) || {
   type: "normal",
   score: 0
@@ -241,22 +244,33 @@ function updateProfile(){
     return;
   }
 
-  let total = 0;
+let total = 0;
 let weightTotal = 0;
 
 let now = Date.now();
 
+// 🔹 MÉMOIRE RÉCENTE (pondérée)
 memory.forEach(m => {
 
   let ageDays = (now - m.date) / (1000 * 60 * 60 * 24);
-
-  // Les données récentes comptent davantage
   let weight = Math.exp(-ageDays / 60);
 
   total += (m.correction || 0) * weight;
   weightTotal += weight;
 
 });
+
+// 🔹 ARCHIVE (poids faible mais stable)
+if (archive && archive.count > 0) {
+
+  let archiveAverage = archive.total / archive.count;
+
+  // poids global faible pour ne pas écraser le récent
+  let archiveWeight = 0.2;
+
+  total += archiveAverage * archiveWeight;
+  weightTotal += archiveWeight;
+}
 
 let average = weightTotal > 0 
   ? total / weightTotal 
@@ -278,4 +292,33 @@ let average = weightTotal > 0
     "profile",
     JSON.stringify(profile)
   );
+}
+// ---------------- NETTOYAGE MEMOIRE ----------------
+function cleanMemory(){
+
+  let now = Date.now();
+
+  // 90 jours
+  let limit = 1000 * 60 * 60 * 24 * 90;
+
+ let newMemory = [];
+
+memory.forEach(m => {
+
+  if ((now - m.date) < limit) {
+    newMemory.push(m);
+  } else {
+    // 👉 on archive au lieu de supprimer
+    archive.total += m.correction || 0;
+    archive.count += 1;
+  }
+
+});
+
+memory = newMemory;
+
+  localStorage.setItem(
+  "archive",
+  JSON.stringify(archive)
+);
 }
