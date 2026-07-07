@@ -165,10 +165,10 @@ let soir = predict(tSoir, hSoir, wSoir);
   document.getElementById("hum").innerText = hum;
   document.getElementById("wind").innerText = wind;
 
-  document.getElementById("forecast").innerHTML =
-  `${weatherIconFromCode(cMatin)} Matin: ${matin.toFixed(1)}°C<br>
-   ${weatherIconFromCode(cMidi)} Midi: ${midi.toFixed(1)}°C<br>
-   ${weatherIconFromCode(cSoir)} Soir: ${soir.toFixed(1)}°C`;
+ document.getElementById("forecast").innerHTML =
+  `${weatherIconFromCode(cMatin)} Matin ${matin.toFixed(1)}°C | 
+   ${weatherIconFromCode(cMidi)} Midi ${midi.toFixed(1)}°C | 
+   ${weatherIconFromCode(cSoir)} Soir ${soir.toFixed(1)}°C`;
   // ---------------- IA FIXE ----------------
   document.getElementById("comfort").innerText =
     comfortLevel(feel);
