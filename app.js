@@ -57,7 +57,22 @@ function comfortLevel(feels) {
   if (feels >= 22) return " 🔥 Chaud";
   return "☀️ Chaud";
 }
+// ---------------- CONFIANCE IA ----------------
+function aiConfidence(){
 
+  let count = memory.length;
+
+  if(count === 0){
+    return "🧠 Confiance IA : apprentissage en cours";
+  }
+
+  let percent = Math.min(
+    95,
+    Math.round(count * 3)
+  );
+
+  return `🧠 Confiance IA : ${percent}% (${count} observations)`;
+}
 // ---------------- GPS ----------------
 function gps() {
   navigator.geolocation.getCurrentPosition(
@@ -243,7 +258,10 @@ function feedback(type) {
   updateProfile();
 
   document.getElementById("ai").innerText =
-    `IA apprentissage ✔ (${memory.length} données)`;
+    `IA apprentissage ✔ (${memory.length})`;
+
+document.getElementById("confidence").innerText =
+    aiConfidence();
 }
 
 // ------// ---------------- PROFIL AUTOMATIQUE IA ----------------
