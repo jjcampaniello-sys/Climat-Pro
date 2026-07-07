@@ -57,6 +57,32 @@ function comfortLevel(feels) {
   if (feels >= 22) return " 🔥 Chaud";
   return "☀️ Chaud";
 }
+// ---------------- CONSEIL IA ----------------
+function comfortAdvice(feels, wind){
+
+  if(feels < 5){
+    return "🥶 Conseil IA : vêtements chauds recommandés";
+  }
+
+  if(feels < 12){
+    return "🧥 Conseil IA : veste ou pull conseillé";
+  }
+
+  if(feels >= 12 && feels <= 22){
+
+    if(wind > 20){
+      return "🌬️ Conseil IA : température agréable mais vent présent";
+    }
+
+    return "👕 Conseil IA : tenue légère confortable";
+  }
+
+  if(feels < 28){
+    return "☀️ Conseil IA : vêtements légers recommandés";
+  }
+
+  return "🥵 Conseil IA : privilégier l'ombre et l'hydratation";
+}
 // ---------------- CONFIANCE IA ----------------
 function aiConfidence(){
 
@@ -149,6 +175,8 @@ async function load(lat, lon) {
   let hum = hourly.relativehumidity_2m?.[0] ?? 50;
 
   let feel = predict(temp, hum, wind);
+  document.getElementById("advice").innerText =
+comfortAdvice(feel, wind);
 
   // ---------------- MATIN / MIDI / SOIR ----------------
   let iMatin = 8;
