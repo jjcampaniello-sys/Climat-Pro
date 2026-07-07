@@ -12,8 +12,8 @@ let profile = JSON.parse(localStorage.getItem("profile")) || {
 async function weather(lat, lon) {
   try {
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m,weathercode&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
-    );
+  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m,weathercode&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+);
     return await res.json();
   } catch (e) {
     return null;
@@ -182,20 +182,31 @@ let soir = predict(tSoir, hSoir, wSoir);
   document.getElementById("forecastTitle").innerText = title;
 
   // ---------------- DEMAIN (FIX MIN/MAX BUG) ----------------
-  let tmin =
-    daily.temperature_2m_min?.[1] ??
-    daily.temperature_2m_min?.[0] ??
-    temp;
+  // ---------------- DEMAIN IA RESSENTI ----------------
 
-  let tmax =
-    daily.temperature_2m_max?.[1] ??
-    daily.temperature_2m_max?.[0] ??
-    temp;
+let demainMatin = predict(
+  hourly.temperature_2m?.[24] ?? temp,
+  hourly.relativehumidity_2m?.[24] ?? hum,
+  hourly.windspeed_10m?.[24] ?? wind
+);
 
-  let tomorrow = predict((tmin + tmax) / 2, 50, 10);
+let demainMidi = predict(
+  hourly.temperature_2m?.[30] ?? temp,
+  hourly.relativehumidity_2m?.[30] ?? hum,
+  hourly.windspeed_10m?.[30] ?? wind
+);
 
-  document.getElementById("tomorrow").innerText =
-    `🌡️ Demain: ${tmin}°C / ${tmax}°C | Ressenti: ${tomorrow.toFixed(1)}°C`;
+let demainSoir = predict(
+  hourly.temperature_2m?.[38] ?? temp,
+  hourly.relativehumidity_2m?.[38] ?? hum,
+  hourly.windspeed_10m?.[38] ?? wind
+);
+
+
+document.getElementById("tomorrow").innerHTML =
+`${weatherIconFromCode(hourly.weathercode?.[24])} Matin ${demainMatin.toFixed(1)}°C |
+ ${weatherIconFromCode(hourly.weathercode?.[30])} Midi ${demainMidi.toFixed(1)}°C |
+ ${weatherIconFromCode(hourly.weathercode?.[38])} Soir ${demainSoir.toFixed(1)}°C`;
 
   // ---------------- ALERT ----------------
   document.getElementById("alert").innerText =
