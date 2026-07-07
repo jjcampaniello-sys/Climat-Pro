@@ -379,3 +379,33 @@ memory = newMemory;
   JSON.stringify(archive)
 );
 }
+// ---------------- RESET IA ----------------
+function resetAI(){
+
+  if(confirm("Effacer l'apprentissage IA ?")){
+
+    memory = [];
+
+    profile = {
+      type: "normal",
+      score: 0
+    };
+
+    localStorage.removeItem("memory");
+
+    localStorage.setItem(
+      "profile",
+      JSON.stringify(profile)
+    );
+
+    document.getElementById("ai").innerText =
+      "IA réinitialisée ✔";
+
+    document.getElementById("confidence").innerText =
+      "🧠 Confiance IA : apprentissage en cours";
+
+    document.getElementById("advice").innerText =
+      "";
+
+  }
+}
