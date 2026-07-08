@@ -209,9 +209,16 @@ let soir = predict(tSoir, hSoir, wSoir);
   document.getElementById("wind").innerText = wind;
 
  document.getElementById("forecast").innerHTML =
-  `${weatherIconFromCode(cMatin)} Matin ${matin.toFixed(1)}°C | 
-   ${weatherIconFromCode(cMidi)} Midi ${midi.toFixed(1)}°C | 
-   ${weatherIconFromCode(cSoir)} Soir ${soir.toFixed(1)}°C`;
+  `<div style="display:flex; justify-content:space-between; text-align:center;">
+     <span style="flex:1;">Matin ${matin.toFixed(1)}°C</span>
+     <span style="flex:1;">Midi ${midi.toFixed(1)}°C</span>
+     <span style="flex:1;">Soir ${soir.toFixed(1)}°C</span>
+   </div>
+   <div style="display:flex; justify-content:space-between; text-align:center; font-size:22px;">
+     <span style="flex:1;">${weatherIconFromCode(cMatin)}</span>
+     <span style="flex:1;">${weatherIconFromCode(cMidi)}</span>
+     <span style="flex:1;">${weatherIconFromCode(cSoir)}</span>
+   </div>`;
   // ---------------- IA FIXE ----------------
   document.getElementById("comfort").innerText =
     comfortLevel(feel);
@@ -247,9 +254,16 @@ let demainSoir = predict(
 
 
 document.getElementById("tomorrow").innerHTML =
-`${weatherIconFromCode(hourly.weathercode?.[24])} Matin ${demainMatin.toFixed(1)}°C |
- ${weatherIconFromCode(hourly.weathercode?.[30])} Midi ${demainMidi.toFixed(1)}°C |
- ${weatherIconFromCode(hourly.weathercode?.[38])} Soir ${demainSoir.toFixed(1)}°C`;
+  `<div style="display:flex; justify-content:space-between; text-align:center;">
+     <span style="flex:1;">Matin ${tMatin.toFixed(1)}°C</span>
+     <span style="flex:1;">Midi ${tMidi.toFixed(1)}°C</span>
+     <span style="flex:1;">Soir ${tSoir.toFixed(1)}°C</span>
+   </div>
+   <div style="display:flex; justify-content:space-between; text-align:center; font-size:22px;">
+     <span style="flex:1;">${weatherIconFromCode(cMatinDemain)}</span>
+     <span style="flex:1;">${weatherIconFromCode(cMidiDemain)}</span>
+     <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
+   </div>`;
 
   // ---------------- ALERT ----------------
   document.getElementById("alert").innerText =
