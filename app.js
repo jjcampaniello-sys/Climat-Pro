@@ -310,7 +310,6 @@ document.getElementById("tomorrow").innerHTML =
 // ---------------- FEEDBACK ----------------
 // ---------------- FEEDBACK IA ----------------
 function feedback(type) {
-   alert("Bouton IA fonctionne : " + type);
 
 let today = new Date().toDateString();
 
@@ -346,6 +345,7 @@ if (alreadyToday.length >= 100) {
     "memory",
     JSON.stringify(memory)
   );
+  alert(JSON.stringify(memory[memory.length-1]));
 document.getElementById("ai").innerText =
   JSON.stringify(memory[memory.length - 1]);
   updateProfile();
