@@ -322,8 +322,36 @@ document.getElementById("tomorrow").innerHTML =
      <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
    </div>`;
   // ---------------- ALERT ----------------
-  document.getElementById("alert").innerText =
-    temp > 32 ? "🔥 Forte chaleur" : "OK";
+//  document.getElementById("alert").innerText =
+  //  temp > 32 ? "🔥 Forte chaleur" : "OK";
+  // ---------------- ALERTES ----------------
+
+let alertMessage = "OK";
+
+if (temp > 30 && hum < 30 && wind > 30) {
+
+  alertMessage =
+    "🔥 Conditions favorables au risque incendie végétation";
+
+}
+
+else if (temp > 32) {
+
+  alertMessage =
+    "🌡️ Forte chaleur";
+
+}
+
+else if (wind > 50) {
+
+  alertMessage =
+    "🌬️ Vent fort";
+
+}
+
+
+document.getElementById("alert").innerText =
+  alertMessage;
 }
 
 // ---------------- FEEDBACK ----------------
