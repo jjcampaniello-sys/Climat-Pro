@@ -200,10 +200,14 @@ async function suggestCities() {
   data.results.forEach(city => {
     let div = document.createElement("div");
     div.className = "suggestion";
-    div.innerText = city.name;
-
+    //div.innerText = city.name;
+div.innerText =
+  `${city.name}, ${city.country || ""}`;
+    
     div.onclick = () => {
-      document.getElementById("search").value = city.name;
+    //  document.getElementById("search").value = city.name;
+      document.getElementById("search").value =
+  `${city.name}, ${city.country || ""}`;
       box.innerHTML = "";
       load(city.latitude, city.longitude);
     };
