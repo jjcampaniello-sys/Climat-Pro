@@ -322,7 +322,7 @@ document.getElementById("tomorrow").innerHTML =
      <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
    </div>`;
   // ---------------- ALERT ----------------
-//  document.getElementById("alert").innerText =
+//  document.getElementById("alert").innerText = 
   //  temp > 32 ? "🔥 Forte chaleur" : "OK";
   // ---------------- ALERTES METEO ----------------
 
