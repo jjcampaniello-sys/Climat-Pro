@@ -118,14 +118,33 @@ function comfortAdvice(feels, wind){
   return "🥵 Conseil IA : privilégier l'ombre et l'hydratation";
 }
 // ---------------- CONFIANCE IA ----------------
-// ---------------- CONFIANCE IA PROGRESSIVE ----------------
+// ---------------- CONFIANCE IA PAR SAISON ----------------
+
 function aiConfidence(){
 
-  let confidence = Math.round(
-    100 * (1 - Math.exp(-memory.length / 50))
+  let currentSeason = getSeason();
+
+  let globalCount = memory.length;
+
+  let seasonCount = memory.filter(m =>
+    m.season === currentSeason
+  ).length;
+
+
+  let globalConfidence = Math.round(
+    100 * (1 - Math.exp(-globalCount / 50))
   );
 
-  return `🧠 Confiance IA : ${confidence}%`;
+
+  let seasonConfidence = Math.round(
+    100 * (1 - Math.exp(-seasonCount / 30))
+  );
+
+
+  return `
+🧠 IA globale : ${globalConfidence}%
+${currentSeason} : ${seasonConfidence}%
+`;
 }
 // ---------------- GPS ----------------
 function gps() {
