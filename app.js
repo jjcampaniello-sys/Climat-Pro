@@ -208,7 +208,52 @@ async function suggestCities() {
     box.appendChild(div);
   });
 }
+ // ---------------- ALERTES METEO ----------------
 
+let alertMessage = "🟢 Normal";
+
+
+// Niveau 1 : risque incendie végétation
+if (temp > 30 && hum < 30 && wind > 30) {
+
+  alertMessage =
+    "🔴 Conditions très favorables au risque incendie végétation";
+
+}
+
+
+// Niveau 2 : vigilance chaleur et sécheresse
+else if (
+  (temp > 28 && hum < 40) ||
+  (temp > 30 && wind > 25)
+) {
+
+  alertMessage =
+    "🟠 Vigilance : conditions chaudes et sèches";
+
+}
+
+
+// Niveau 3 : forte chaleur
+else if (temp > 32) {
+
+  alertMessage =
+    "🔥 Forte chaleur";
+
+}
+
+
+// Niveau 4 : vent fort
+else if (wind > 50) {
+
+  alertMessage =
+    "🌬️ Vent fort";
+
+}
+
+
+document.getElementById("alert").innerText =
+  alertMessage;
 // ---------------- LOAD ----------------
 async function load(lat, lon) {
   let data = await weather(lat, lon);
@@ -322,52 +367,6 @@ document.getElementById("tomorrow").innerHTML =
      <span style="flex:1;">${weatherIconFromCode(cMidiDemain)}</span>
      <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
    </div>`;
-  // ---------------- ALERTES METEO ----------------
-
-let alertMessage = "🟢 Normal";
-
-
-// Niveau 1 : risque incendie végétation
-if (temp > 30 && hum < 30 && wind > 30) {
-
-  alertMessage =
-    "🔴 Conditions très favorables au risque incendie végétation";
-
-}
-
-
-// Niveau 2 : vigilance chaleur et sécheresse
-else if (
-  (temp > 28 && hum < 40) ||
-  (temp > 30 && wind > 25)
-) {
-
-  alertMessage =
-    "🟠 Vigilance : conditions chaudes et sèches";
-
-}
-
-
-// Niveau 3 : forte chaleur
-else if (temp > 32) {
-
-  alertMessage =
-    "🔥 Forte chaleur";
-
-}
-
-
-// Niveau 4 : vent fort
-else if (wind > 50) {
-
-  alertMessage =
-    "🌬️ Vent fort";
-
-}
-
-
-document.getElementById("alert").innerText =
-  alertMessage;
 
 // ---------------- FEEDBACK ----------------
 // ---------------- FEEDBACK IA ----------------
