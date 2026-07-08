@@ -12,7 +12,7 @@ let profile = JSON.parse(localStorage.getItem("profile")) || {
 async function weather(lat, lon) {
   try {
     const res = await fetch(
-  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,relativehumidity_2m,weathercode&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,winddirection_10m,relativehumidity_2m,weathercode&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
 );
     return await res.json();
   } catch (e) {
@@ -49,6 +49,23 @@ function weatherIconFromCode(code) {
   if (code <= 82) return "🌦️";
   if (code <= 99) return "⛈️";
   return "❓";
+}
+// ---------------- DIRECTION VENT ----------------
+
+function windDirection(deg){
+
+  if(deg === undefined) return "";
+
+  if(deg < 22.5) return "N";
+  if(deg < 67.5) return "NE";
+  if(deg < 112.5) return "E";
+  if(deg < 157.5) return "SE";
+  if(deg < 202.5) return "S";
+  if(deg < 247.5) return "SO";
+  if(deg < 292.5) return "O";
+  if(deg < 337.5) return "NO";
+
+  return "N";
 }
 // ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
@@ -166,6 +183,10 @@ async function load(lat, lon) {
 
   let temp = current.temperature ?? 0;
   let wind = current.windspeed ?? 5;
+  let windDeg = current.winddirection ?? 
+              hourly.winddirection_10m?.[0] ?? 0;
+
+let windDir = windDirection(windDeg);
   let hum = hourly.relativehumidity_2m?.[0] ?? 50;
 
   let feel = predict(temp, hum, wind);
@@ -200,7 +221,8 @@ let soir = predict(tSoir, hSoir, wSoir);
   document.getElementById("temp").innerText = temp;
   document.getElementById("feel").innerText = feel.toFixed(1);
   document.getElementById("hum").innerText = hum;
-  document.getElementById("wind").innerText = wind;
+document.getElementById("wind").innerText =
+  `${wind} km/h ${windDir}`;
 
  document.getElementById("forecast").innerHTML =
   `<div style="display:flex; justify-content:space-between; text-align:center;">
