@@ -293,15 +293,22 @@ document.getElementById("wind").innerText =
 
   // ---------------- DEMAIN (FIX MIN/MAX BUG) ----------------
   // ---------------- DEMAIN IA RESSENTI ----------------
-// ---------------- DEMAIN IA RESSENTI ----------------
 
 function findHourIndex(hourTarget) {
+
+  let tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  let tomorrowDay = tomorrow.getDate();
 
   for (let i = 0; i < hourly.time.length; i++) {
 
     let date = new Date(hourly.time[i]);
 
-    if (date.getHours() === hourTarget) {
+    if (
+      date.getDate() === tomorrowDay &&
+      date.getHours() === hourTarget
+    ) {
 
       return i;
 
