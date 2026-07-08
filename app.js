@@ -345,7 +345,8 @@ if (alreadyToday.length >= 100) {
     "memory",
     JSON.stringify(memory)
   );
-
+document.getElementById("ai").innerText =
+  JSON.stringify(memory[memory.length - 1]);
   updateProfile();
 
   document.getElementById("ai").innerText =
