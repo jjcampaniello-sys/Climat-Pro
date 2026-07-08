@@ -324,24 +324,42 @@ document.getElementById("tomorrow").innerHTML =
   // ---------------- ALERT ----------------
 //  document.getElementById("alert").innerText =
   //  temp > 32 ? "🔥 Forte chaleur" : "OK";
-  // ---------------- ALERTES ----------------
+  // ---------------- ALERTES METEO ----------------
 
-let alertMessage = "OK";
+let alertMessage = "🟢 Normal";
 
+
+// Niveau 1 : risque incendie végétation
 if (temp > 30 && hum < 30 && wind > 30) {
 
   alertMessage =
-    "🔥 Conditions favorables au risque incendie végétation";
+    "🔴 Conditions très favorables au risque incendie végétation";
 
 }
 
+
+// Niveau 2 : vigilance chaleur et sécheresse
+else if (
+  (temp > 28 && hum < 40) ||
+  (temp > 30 && wind > 25)
+) {
+
+  alertMessage =
+    "🟠 Vigilance : conditions chaudes et sèches";
+
+}
+
+
+// Niveau 3 : forte chaleur
 else if (temp > 32) {
 
   alertMessage =
-    "🌡️ Forte chaleur";
+    "🔥 Forte chaleur";
 
 }
 
+
+// Niveau 4 : vent fort
 else if (wind > 50) {
 
   alertMessage =
