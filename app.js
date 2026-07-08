@@ -222,7 +222,7 @@ let soir = predict(tSoir, hSoir, wSoir);
   document.getElementById("feel").innerText = feel.toFixed(1);
   document.getElementById("hum").innerText = hum;
 document.getElementById("wind").innerText =
-  `${wind} ${windDir}`;
+  `${wind} km/h ${windDir}`;
 
  document.getElementById("forecast").innerHTML =
   `<div style="display:flex; justify-content:space-between; text-align:center;">
