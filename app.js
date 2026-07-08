@@ -1,3 +1,7 @@
+let browserLang = navigator.language || "fr";
+
+console.log("Langue navigateur :", browserLang);
+
 let memory = JSON.parse(localStorage.getItem("memory")) || [];
 let archive = JSON.parse(localStorage.getItem("archive")) || {
   total: 0,
