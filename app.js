@@ -67,6 +67,23 @@ function windDirection(deg){
 
   return "N";
 }
+// ---------------- SAISON ----------------
+
+function getSeason(){
+
+  let month = new Date().getMonth();
+
+  if(month >= 2 && month <= 4)
+    return "🌱 Printemps";
+
+  if(month >= 5 && month <= 7)
+    return "☀️ Été";
+
+  if(month >= 8 && month <= 10)
+    return "🍂 Automne";
+
+  return "❄️ Hiver";
+}
 // ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
   if (feels < 10) return "🥶 Froid";
@@ -320,7 +337,8 @@ if (alreadyToday.length >= 2) {
     feel: t + correction,
     correction: correction,
     hour: new Date().getHours(),
-    date: Date.now()
+    date: Date.now(),
+  season: getSeason()
   });
 
   localStorage.setItem(
