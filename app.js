@@ -252,19 +252,23 @@ let demainSoir = predict(
   hourly.windspeed_10m?.[38] ?? wind
 );
 
+// --- CODES METEO DEMAIN ---
+let cMatinDemain = hourly.weathercode?.[24] ?? 0;
+let cMidiDemain = hourly.weathercode?.[30] ?? 0;
+let cSoirDemain = hourly.weathercode?.[38] ?? 0;
 
+// --- AFFICHAGE ---
 document.getElementById("tomorrow").innerHTML =
   `<div style="display:flex; justify-content:space-between; text-align:center;">
-     <span style="flex:1;">Matin ${tMatin.toFixed(1)}°C</span>
-     <span style="flex:1;">Midi ${tMidi.toFixed(1)}°C</span>
-     <span style="flex:1;">Soir ${tSoir.toFixed(1)}°C</span>
+     <span style="flex:1;">Matin ${demainMatin.toFixed(1)}°C</span>
+     <span style="flex:1;">Midi ${demainMidi.toFixed(1)}°C</span>
+     <span style="flex:1;">Soir ${demainSoir.toFixed(1)}°C</span>
    </div>
    <div style="display:flex; justify-content:space-between; text-align:center; font-size:22px;">
      <span style="flex:1;">${weatherIconFromCode(cMatinDemain)}</span>
      <span style="flex:1;">${weatherIconFromCode(cMidiDemain)}</span>
      <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
    </div>`;
-
   // ---------------- ALERT ----------------
   document.getElementById("alert").innerText =
     temp > 32 ? "🔥 Forte chaleur" : "OK";
