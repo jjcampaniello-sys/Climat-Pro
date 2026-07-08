@@ -310,7 +310,8 @@ document.getElementById("tomorrow").innerHTML =
 // ---------------- FEEDBACK ----------------
 // ---------------- FEEDBACK IA ----------------
 function feedback(type) {
-  
+   alert("Bouton IA fonctionne : " + type);
+
 let today = new Date().toDateString();
 
 let alreadyToday = memory.filter(m =>
