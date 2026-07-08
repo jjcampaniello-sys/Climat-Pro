@@ -337,7 +337,7 @@ let alreadyToday = memory.filter(m =>
   new Date(m.date).toDateString() === today
 );
 
-if (alreadyToday.length >= 100) {
+if (alreadyToday.length >= 3) {
   document.getElementById("ai").innerText =
     "IA déjà alimentée aujourd'hui ✔";
   return;
