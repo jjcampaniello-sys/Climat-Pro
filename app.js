@@ -293,29 +293,52 @@ document.getElementById("wind").innerText =
 
   // ---------------- DEMAIN (FIX MIN/MAX BUG) ----------------
   // ---------------- DEMAIN IA RESSENTI ----------------
+// ---------------- DEMAIN IA RESSENTI ----------------
 
-let demainMatin = predict(
-  hourly.temperature_2m?.[24] ?? temp,
-  hourly.relativehumidity_2m?.[24] ?? hum,
-  hourly.windspeed_10m?.[24] ?? wind
+function findHourIndex(hourTarget) {
+
+  for (let i = 0; i < hourly.time.length; i++) {
+
+    let date = new Date(hourly.time[i]);
+
+    if (date.getHours() === hourTarget) {
+
+      return i;
+
+    }
+
+  }
+
+  return 0;
+}
+
+let demainMatinIndex = findHourIndex(8);
+let demainMidiIndex = findHourIndex(13);
+let demainSoirIndex = findHourIndex(20);
+  
+let demainMidi = predict(
+  hourly.temperature_2m?.[demainMidiIndex] ?? temp,
+  hourly.relativehumidity_2m?.[demainMidiIndex] ?? hum,
+  hourly.windspeed_10m?.[demainMidiIndex] ?? wind
 );
 
-let demainMidi = predict(
-  hourly.temperature_2m?.[30] ?? temp,
-  hourly.relativehumidity_2m?.[30] ?? hum,
-  hourly.windspeed_10m?.[30] ?? wind
+let demainMatin = predict(
+  hourly.temperature_2m?.[demainMatinIndex] ?? temp,
+  hourly.relativehumidity_2m?.[demainMatinIndex] ?? hum,
+  hourly.windspeed_10m?.[demainMatinIndex] ?? wind
 );
 
 let demainSoir = predict(
-  hourly.temperature_2m?.[38] ?? temp,
-  hourly.relativehumidity_2m?.[38] ?? hum,
-  hourly.windspeed_10m?.[38] ?? wind
+  hourly.temperature_2m?.[demainSoirIndex] ?? temp,
+  hourly.relativehumidity_2m?.[demainSoirIndex] ?? hum,
+  hourly.windspeed_10m?.[demainSoirIndex] ?? wind
 );
 
 // --- CODES METEO DEMAIN ---
-let cMatinDemain = hourly.weathercode?.[24] ?? 0;
-let cMidiDemain = hourly.weathercode?.[30] ?? 0;
-let cSoirDemain = hourly.weathercode?.[38] ?? 0;
+// --- CODES METEO DEMAIN ---
+let cMatinDemain = hourly.weathercode?.[demainMatinIndex] ?? 0;
+let cMidiDemain = hourly.weathercode?.[demainMidiIndex] ?? 0;
+let cSoirDemain = hourly.weathercode?.[demainSoirIndex] ?? 0;
 
 // --- AFFICHAGE ---
 document.getElementById("tomorrow").innerHTML =
