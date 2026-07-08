@@ -84,20 +84,14 @@ function comfortAdvice(feels, wind){
   return "🥵 Conseil IA : privilégier l'ombre et l'hydratation";
 }
 // ---------------- CONFIANCE IA ----------------
+// ---------------- CONFIANCE IA PROGRESSIVE ----------------
 function aiConfidence(){
 
-  let count = memory.length;
-
-  if(count === 0){
-    return "🧠 Confiance IA : apprentissage en cours";
-  }
-
-  let percent = Math.min(
-    95,
-    Math.round(count * 3)
+  let confidence = Math.round(
+    100 * (1 - Math.exp(-memory.length / 50))
   );
 
-  return `🧠 Confiance IA : ${percent}% (${count} observations)`;
+  return `🧠 Confiance IA : ${confidence}%`;
 }
 // ---------------- GPS ----------------
 function gps() {
@@ -277,7 +271,18 @@ document.getElementById("tomorrow").innerHTML =
 // ---------------- FEEDBACK ----------------
 // ---------------- FEEDBACK IA ----------------
 function feedback(type) {
+  
+let today = new Date().toDateString();
 
+let alreadyToday = memory.filter(m =>
+  new Date(m.date).toDateString() === today
+);
+
+if (alreadyToday.length >= 2) {
+  document.getElementById("ai").innerText =
+    "IA déjà alimentée aujourd'hui ✔";
+  return;
+}
   let t = parseFloat(document.getElementById("temp").innerText);
 
   if (isNaN(t)) return;
