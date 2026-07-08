@@ -328,8 +328,8 @@ document.getElementById("tomorrow").innerHTML =
 
 let alertMessage = "OK";
 
-if (temp > 30 && hum < 30 && wind > 30) {
-
+//if (temp > 30 && hum < 30 && wind > 30) {
+if (temp > 10 && hum < 90 && wind > 1) {
   alertMessage =
     "🔥 Conditions favorables au risque incendie végétation";
 
