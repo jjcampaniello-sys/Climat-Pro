@@ -67,23 +67,6 @@ function windDirection(deg){
 
   return "N";
 }
-// ---------------- SAISON ----------------
-
-function getSeason(){
-
-  let month = new Date().getMonth();
-
-  if(month >= 2 && month <= 4)
-    return "🌱 Printemps";
-
-  if(month >= 5 && month <= 7)
-    return "☀️ Été";
-
-  if(month >= 8 && month <= 10)
-    return "🍂 Automne";
-
-  return "❄️ Hiver";
-}
 // ---------------- IA LEVEL (FIX STRICT) ----------------
 function comfortLevel(feels) {
   if (feels < 10) return "🥶 Froid";
@@ -119,33 +102,13 @@ function comfortAdvice(feels, wind){
 }
 // ---------------- CONFIANCE IA ----------------
 // ---------------- CONFIANCE IA PROGRESSIVE ----------------
-// ---------------- CONFIANCE IA PAR SAISON ----------------
-
 function aiConfidence(){
 
-  let currentSeason = getSeason();
-
-  let globalCount = memory.length;
-
-  let seasonCount = memory.filter(m =>
-    m.season === currentSeason
-  ).length;
-
-
-  let globalConfidence = Math.round(
-    100 * (1 - Math.exp(-globalCount / 50))
+  let confidence = Math.round(
+    100 * (1 - Math.exp(-memory.length / 50))
   );
 
-
-  let seasonConfidence = Math.round(
-    100 * (1 - Math.exp(-seasonCount / 30))
-  );
-
-
-  return `
-🧠 IA globale : ${globalConfidence}%
-${currentSeason} : ${seasonConfidence}%
-`;
+  return `🧠 Confiance IA : ${confidence}%`;
 }
 // ---------------- GPS ----------------
 function gps() {
@@ -208,7 +171,7 @@ async function suggestCities() {
     box.appendChild(div);
   });
 }
- 
+
 // ---------------- LOAD ----------------
 async function load(lat, lon) {
   let data = await weather(lat, lon);
@@ -322,21 +285,22 @@ document.getElementById("tomorrow").innerHTML =
      <span style="flex:1;">${weatherIconFromCode(cMidiDemain)}</span>
      <span style="flex:1;">${weatherIconFromCode(cSoirDemain)}</span>
    </div>`;
-// ---------------- ALERTES METEO ----------------
+  // ---------------- ALERT ----------------
+  document.getElementById("alert").innerText =
+    temp > 32 ? "🔥 Forte chaleur" : "OK";
+}
 
-document.getElementById("alert").innerText =
-  temp > 32 ? "🔥 Forte chaleur" : "OK";
 // ---------------- FEEDBACK ----------------
 // ---------------- FEEDBACK IA ----------------
 function feedback(type) {
-
+  
 let today = new Date().toDateString();
 
 let alreadyToday = memory.filter(m =>
   new Date(m.date).toDateString() === today
 );
 
-if (alreadyToday.length >= 3) {
+if (alreadyToday.length >= 2) {
   document.getElementById("ai").innerText =
     "IA déjà alimentée aujourd'hui ✔";
   return;
@@ -356,8 +320,7 @@ if (alreadyToday.length >= 3) {
     feel: t + correction,
     correction: correction,
     hour: new Date().getHours(),
-    date: Date.now(),
-  season: getSeason()
+    date: Date.now()
   });
 
   localStorage.setItem(
@@ -365,8 +328,6 @@ if (alreadyToday.length >= 3) {
     JSON.stringify(memory)
   );
 
-document.getElementById("ai").innerText =
-  JSON.stringify(memory[memory.length - 1]);
   updateProfile();
 
   document.getElementById("ai").innerText =
