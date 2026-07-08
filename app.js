@@ -119,13 +119,33 @@ function comfortAdvice(feels, wind){
 }
 // ---------------- CONFIANCE IA ----------------
 // ---------------- CONFIANCE IA PROGRESSIVE ----------------
+// ---------------- CONFIANCE IA PAR SAISON ----------------
+
 function aiConfidence(){
 
-  let confidence = Math.round(
-    100 * (1 - Math.exp(-memory.length / 50))
+  let currentSeason = getSeason();
+
+  let globalCount = memory.length;
+
+  let seasonCount = memory.filter(m =>
+    m.season === currentSeason
+  ).length;
+
+
+  let globalConfidence = Math.round(
+    100 * (1 - Math.exp(-globalCount / 50))
   );
 
-  return `🧠 Confiance IA : ${confidence}%`;
+
+  let seasonConfidence = Math.round(
+    100 * (1 - Math.exp(-seasonCount / 30))
+  );
+
+
+  return `
+🧠 IA globale : ${globalConfidence}%
+${currentSeason} : ${seasonConfidence}%
+`;
 }
 // ---------------- GPS ----------------
 function gps() {
@@ -345,7 +365,7 @@ if (alreadyToday.length >= 100) {
     "memory",
     JSON.stringify(memory)
   );
-  alert(JSON.stringify(memory[memory.length-1]));
+
 document.getElementById("ai").innerText =
   JSON.stringify(memory[memory.length - 1]);
   updateProfile();
